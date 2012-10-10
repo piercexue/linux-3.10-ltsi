@@ -21,17 +21,60 @@
 #include <asm/hardware/cache-l2x0.h>
 #include <asm/hardware/gic.h>
 #include <asm/mach/arch.h>
+#include <asm/mach/map.h>
 
 extern void socfpga_init_clocks(void);
+extern void socfpga_sysmgr_init(void);
+extern struct dw_mci_board sdmmc_platform_data;
+
+#define SOCFPGA_SCU_VIRT_BASE	0xfffec000
+#define SOCFPGA_RST_MANAGER_VIRT_BASE	0xffd05000
+#define SOCFPGA_SYS_MANAGER_VIRT_BASE	0xffd08000
+#define SOCFPGA5XS1_SDMMC_BASE 		0xff704000
+
+void __iomem *socfpga_scu_base_addr = ((void __iomem *)(SOCFPGA_SCU_VIRT_BASE));
+void __iomem *rst_manager_base_addr = ((void __iomem *)(SOCFPGA_RST_MANAGER_VIRT_BASE));
+void __iomem *sys_manager_base_addr = ((void __iomem *)(SOCFPGA_SYS_MANAGER_VIRT_BASE));
+
+static const struct of_dev_auxdata socfpga_auxdata_lookup[] __initconst = {
+#ifdef CONFIG_MMC_DW
+ 	OF_DEV_AUXDATA("snps,dw-mmc", SOCFPGA5XS1_SDMMC_BASE, "snps,dw-mmc", &sdmmc_platform_data),
+#endif
+	{ /* sentinel */ }
+};
 
 const static struct of_device_id irq_match[] = {
 	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
 	{}
 };
 
+static struct map_desc scu_io_desc __initdata = {
+	.virtual	= SOCFPGA_SCU_VIRT_BASE,
+	.pfn		= 0, /* run-time */
+	.length		= SZ_8K,
+	.type		= MT_DEVICE,
+};
+
+static void __init socfpga_scu_map_io(void)
+{
+	unsigned long base;
+
+	/* Get SCU base */
+	asm("mrc p15, 4, %0, c15, c0, 0" : "=r" (base));
+
+	scu_io_desc.pfn = __phys_to_pfn(base);
+	iotable_init(&scu_io_desc, 1);
+}
+
+static void __init socfpga_map_io(void)
+{
+	socfpga_scu_map_io();
+}
+
 static void __init gic_init_irq(void)
 {
 	of_irq_init(irq_match);
+	socfpga_sysmgr_init();	
 }
 
 static void socfpga_cyclone5_restart(char mode, const char *cmd)
@@ -42,7 +85,9 @@ static void socfpga_cyclone5_restart(char mode, const char *cmd)
 static void __init socfpga_cyclone5_init(void)
 {
 	l2x0_of_init(0, ~0UL);
-	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+	of_platform_populate(NULL, of_default_bus_match_table,
+		socfpga_auxdata_lookup, NULL);
+
 	socfpga_init_clocks();
 }
 
@@ -53,6 +98,7 @@ static const char *altera_dt_match[] = {
 };
 
 DT_MACHINE_START(SOCFPGA, "Altera SOCFPGA")
+	.map_io		= socfpga_map_io,
 	.init_irq	= gic_init_irq,
 	.handle_irq     = gic_handle_irq,
 	.timer		= &dw_apb_timer,
