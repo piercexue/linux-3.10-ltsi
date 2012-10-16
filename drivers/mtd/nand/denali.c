@@ -1596,6 +1596,7 @@ failed_req_irq:
 
 	return ret;
 }
+EXPORT_SYMBOL(denali_init);
 
 /* driver exit point */
 void denali_remove(struct denali_nand_info *denali)
@@ -1604,3 +1605,4 @@ void denali_remove(struct denali_nand_info *denali)
 	dma_unmap_single(denali->dev, denali->buf.dma_buf, DENALI_BUF_SIZE,
 			DMA_BIDIRECTIONAL);
 }
+EXPORT_SYMBOL(denali_remove);
