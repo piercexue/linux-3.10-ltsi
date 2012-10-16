@@ -90,6 +90,8 @@ struct spi_device {
 	void			*controller_state;
 	void			*controller_data;
 	char			modalias[SPI_NAME_SIZE];
+	u32			enable_4b_addr; /* Uses 4 bytes address mode */
+	u32			addr_width;
 
 	/*
 	 * likely need more hooks for more protocol options affecting how
