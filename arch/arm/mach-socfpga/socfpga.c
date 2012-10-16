@@ -23,6 +23,8 @@
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
 
+#define SOCFPGA_NR_IRQS		512
+
 extern void socfpga_init_clocks(void);
 extern void socfpga_sysmgr_init(void);
 extern struct dw_mci_board sdmmc_platform_data;
@@ -102,6 +104,7 @@ DT_MACHINE_START(SOCFPGA, "Altera SOCFPGA")
 	.init_irq	= gic_init_irq,
 	.handle_irq     = gic_handle_irq,
 	.timer		= &dw_apb_timer,
+	.nr_irqs		= SOCFPGA_NR_IRQS,
 	.init_machine	= socfpga_cyclone5_init,
 	.restart	= socfpga_cyclone5_restart,
 	.dt_compat	= altera_dt_match,
