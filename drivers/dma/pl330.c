@@ -2395,7 +2395,7 @@ static int pl330_alloc_chan_resources(struct dma_chan *chan)
 	pch->pl330_chid = pl330_request_channel(&pdmac->pif);
 	if (!pch->pl330_chid) {
 		spin_unlock_irqrestore(&pch->lock, flags);
-		return 0;
+		return -EAGAIN;
 	}
 
 	tasklet_init(&pch->task, pl330_tasklet, (unsigned long) pch);
@@ -2909,6 +2909,12 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
 	if (ret)
 		goto probe_err3;
 
+	if (pdat->init) {
+		ret = pdat->init(adev);
+		if (ret)
+			goto probe_err3;
+	}
+
 	ret = pl330_add(pi);
 	if (ret)
 		goto probe_err4;
@@ -3010,6 +3016,7 @@ probe_err1:
 static int __devexit pl330_remove(struct amba_device *adev)
 {
 	struct dma_pl330_dmac *pdmac = amba_get_drvdata(adev);
+	struct dma_pl330_platdata *pdat = adev->dev.platform_data;
 	struct dma_pl330_chan *pch, *_p;
 	struct pl330_info *pi;
 	struct resource *res;
@@ -3043,6 +3050,9 @@ static int __devexit pl330_remove(struct amba_device *adev)
 
 	res = &adev->res;
 	release_mem_region(res->start, resource_size(res));
+
+	if (pdat->exit)
+		pdat->exit(adev);
 
 #ifndef CONFIG_PM_RUNTIME
 	clk_disable(pdmac->clk);
