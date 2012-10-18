@@ -16,6 +16,7 @@
  */
 #include <linux/dw_apb_timer.h>
 #include <linux/of_irq.h>
+#include <linux/of_address.h>
 #include <linux/of_platform.h>
 
 #include <asm/hardware/cache-l2x0.h>
@@ -23,24 +24,22 @@
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
 
+#include "core.h"
+
 #define SOCFPGA_NR_IRQS		512
 
-extern void socfpga_init_clocks(void);
-extern void socfpga_sysmgr_init(void);
-extern struct dw_mci_board sdmmc_platform_data;
+void __iomem *sys_manager_base_addr;
+void __iomem *rst_manager_base_addr;
 
 #define SOCFPGA_SCU_VIRT_BASE	0xfffec000
-#define SOCFPGA_RST_MANAGER_VIRT_BASE	0xffd05000
-#define SOCFPGA_SYS_MANAGER_VIRT_BASE	0xffd08000
-#define SOCFPGA5XS1_SDMMC_BASE 		0xff704000
+#define SOCFPGA_SDMMC_BASE	0xff704000
 
 void __iomem *socfpga_scu_base_addr = ((void __iomem *)(SOCFPGA_SCU_VIRT_BASE));
-void __iomem *rst_manager_base_addr = ((void __iomem *)(SOCFPGA_RST_MANAGER_VIRT_BASE));
-void __iomem *sys_manager_base_addr = ((void __iomem *)(SOCFPGA_SYS_MANAGER_VIRT_BASE));
 
 static const struct of_dev_auxdata socfpga_auxdata_lookup[] __initconst = {
 #ifdef CONFIG_MMC_DW
- 	OF_DEV_AUXDATA("snps,dw-mmc", SOCFPGA5XS1_SDMMC_BASE, "snps,dw-mmc", &sdmmc_platform_data),
+	OF_DEV_AUXDATA("snps,dw-mmc", SOCFPGA_SDMMC_BASE, "snps,dw-mmc",
+		&sdmmc_platform_data),
 #endif
 	{ /* sentinel */ }
 };
@@ -68,6 +67,23 @@ static void __init socfpga_scu_map_io(void)
 	iotable_init(&scu_io_desc, 1);
 }
 
+static void __init enable_periphs(void)
+{
+	/* Release all peripherals from reset.*/
+	__raw_writel(0, rst_manager_base_addr + SOCFPGA_MODPERRST);
+}
+
+static void __init socfpga_sysmgr_init(void)
+{
+	struct device_node *np;
+
+	np = of_find_compatible_node(NULL, NULL, "altr,sys-mgr");
+	sys_manager_base_addr = of_iomap(np, 0);
+
+	np = of_find_compatible_node(NULL, NULL, "altr,rst-mgr");
+	rst_manager_base_addr = of_iomap(np, 0);
+}
+
 static void __init socfpga_map_io(void)
 {
 	socfpga_scu_map_io();
@@ -91,6 +107,7 @@ static void __init socfpga_cyclone5_init(void)
 		socfpga_auxdata_lookup, NULL);
 
 	socfpga_init_clocks();
+	enable_periphs();
 }
 
 static const char *altera_dt_match[] = {
