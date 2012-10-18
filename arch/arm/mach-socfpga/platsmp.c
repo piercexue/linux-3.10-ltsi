@@ -25,15 +25,9 @@
 #include <asm/smp_scu.h>
 #include <asm/smp_plat.h>
 
-volatile int pen_release = -1;
+#include "core.h"
 
-extern void secondary_startup(void);
-extern void __iomem *socfpga_scu_base_addr;
-static void __iomem *sys_manager_base_addr;
-static void __iomem *rst_manager_base_addr;
-
-extern void socfpga_secondary_startup(void);
-extern void socfpga_cpu_die(unsigned int cpu);
+int pen_release = -1;
 
 static DEFINE_SPINLOCK(boot_lock);
 
@@ -128,17 +122,4 @@ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
 		scu_enable(socfpga_scu_base_addr);
 		__raw_writel(virt_to_phys(socfpga_secondary_startup), (sys_manager_base_addr+0x10));
 	}
-}
-
-void __init socfpga_sysmgr_init(void)
-{
-	struct device_node *np;
-
-	np = of_find_compatible_node(NULL, NULL, "altr,sys-mgr");
-	sys_manager_base_addr = of_iomap(np, 0);
-	WARN_ON(!sys_manager_base_addr);
-
-	np = of_find_compatible_node(NULL, NULL, "altr,rst-mgr");
-	rst_manager_base_addr = of_iomap(np, 0);
-	WARN_ON(!rst_manager_base_addr);
 }
