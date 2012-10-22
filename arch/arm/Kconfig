@@ -254,7 +254,7 @@ config ARCH_SOCFPGA
 	select ARCH_WANT_OPTIONAL_GPIOLIB
 	select ARM_AMBA
 	select ARM_GIC
-	select CACHE_L2X0
+	select MIGHT_HAVE_CACHE_L2X0
 	select CLKDEV_LOOKUP
 	select COMMON_CLK
 	select CPU_V7
