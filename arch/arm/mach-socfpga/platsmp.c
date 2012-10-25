@@ -27,10 +27,6 @@
 
 #include "core.h"
 
-int pen_release = -1;
-
-static DEFINE_SPINLOCK(boot_lock);
-
 void __cpuinit platform_secondary_init(unsigned int cpu)
 {
 	/*
@@ -39,56 +35,25 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
 	 * for us: do so
 	 */
 	gic_secondary_init(0);
-
-		/*
-	 * let the primary processor know we're out of the
-	 * pen, then head off into the C entry point
-	 */
-	pen_release = -1;
-	smp_wmb();
-
-	/*
-	 * Synchronise with the boot thread.
-	 */
-	spin_lock(&boot_lock);
-	spin_unlock(&boot_lock);
 }
 
 int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 {
-	unsigned long timeout;
-	/*
-	 * Set synchronisation state between this boot processor
-	 * and the secondary one
-	 */
-	spin_lock(&boot_lock);
+	int trampoline_size = &secondary_trampoline_end - &secondary_trampoline;
 
-	pen_release = cpu_logical_map(cpu);
-	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
-	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
+	memcpy(phys_to_virt(0), &secondary_trampoline, trampoline_size);
 
-	/*
-	 * Send the secondary CPU a soft interrupt, thereby causing
-	 * the boot monitor to read the system wide flags register,
-	 * and branch to the address found there.
-	 */
-	gic_raise_softirq(cpumask_of(cpu), 1);
+	__raw_writel(virt_to_phys(secondary_startup),
+					(sys_manager_base_addr+0x10));
 
-	timeout = jiffies + (1 * HZ);
-	while (time_before(jiffies, timeout)) {
-		smp_rmb();
-		if (pen_release == -1)
-			break;
+	flush_cache_all();
+	smp_wmb();
+	outer_clean_range(0, trampoline_size);
 
-		udelay(10);
-	}
+	/* This will release CPU #1 out of reset.*/
+	__raw_writel(0, rst_manager_base_addr + 0x10);
 
-	/*
-	 * now the secondary core is starting up let it run its
-	 * calibrations, then wait for it to finish
-	 */
-	spin_unlock(&boot_lock);
-	return pen_release != -1 ? -ENOSYS : 0;
+	return 0;
 }
 
 /*
@@ -101,13 +66,14 @@ void __init smp_init_cpus(void)
 
 	ncores = scu_get_core_count(socfpga_scu_base_addr);
 
+	for (i = 0; i < ncores; i++)
+		set_cpu_possible(i, true);
+
 	/* sanity check */
-	if (ncores > NR_CPUS) {
-		printk(KERN_WARNING
-		       "socfpga: no. of cores (%d) greater than configured "
-		       "maximum of %d - clipping\n",
-		       ncores, NR_CPUS);
-		ncores = NR_CPUS;
+	if (ncores > num_possible_cpus()) {
+		pr_warn("# of cores (%d) greater maximum of %d\n",
+			ncores, num_possible_cpus());
+		ncores = num_possible_cpus();
 	}
 
 	for (i = 0; i < ncores; i++)
@@ -118,8 +84,5 @@ void __init smp_init_cpus(void)
 
 void __init platform_smp_prepare_cpus(unsigned int max_cpus)
 {
-	if (sys_manager_base_addr) {
-		scu_enable(socfpga_scu_base_addr);
-		__raw_writel(virt_to_phys(socfpga_secondary_startup), (sys_manager_base_addr+0x10));
-	}
+	scu_enable(socfpga_scu_base_addr);
 }
