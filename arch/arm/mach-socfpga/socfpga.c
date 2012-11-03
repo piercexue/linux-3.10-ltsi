@@ -31,6 +31,7 @@
 void __iomem *socfpga_scu_base_addr = ((void __iomem *)(SOCFPGA_SCU_VIRT_BASE));
 void __iomem *sys_manager_base_addr;
 void __iomem *rst_manager_base_addr;
+unsigned long	cpu1start_addr;
 
 static const struct of_dev_auxdata socfpga_auxdata_lookup[] __initconst = {
 #ifdef CONFIG_MMC_DW
@@ -63,6 +64,16 @@ static void __init socfpga_scu_map_io(void)
 	iotable_init(&scu_io_desc, 1);
 }
 
+static void __init init_socfpga_vt(void)
+{
+	cpu1start_addr = 0x10;
+}
+
+static void __init init_socfpga(void)
+{
+	cpu1start_addr = 0xc4;
+}
+
 static void __init enable_periphs(void)
 {
 	/* Release all peripherals from reset.*/
@@ -88,7 +99,12 @@ static void __init socfpga_map_io(void)
 static void __init gic_init_irq(void)
 {
 	of_irq_init(irq_match);
-	socfpga_sysmgr_init();	
+	socfpga_sysmgr_init();
+
+	if (of_machine_is_compatible("altr,socfpga-vt"))
+		init_socfpga_vt();
+	else
+		init_socfpga();
 }
 
 static void socfpga_cyclone5_restart(char mode, const char *cmd)
