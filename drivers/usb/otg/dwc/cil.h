@@ -57,32 +57,36 @@
  */
 static inline u32 dwc_reg_read(ulong reg, u32 offset)
 {
-	return readl((unsigned __iomem *)(reg + offset));
-};
+	return __raw_readl(reg + offset);
+}
 
 static inline void dwc_reg_write(ulong reg, u32 offset, const u32 value)
 {
-	writel(value, (unsigned __iomem *)(reg + offset));
-};
+	__raw_writel(value, reg + offset);
+}
+
 /**
  * This function modifies bit values in a register.  Using the
  * algorithm: (reg_contents & ~clear_mask) | set_mask.
  */
-static inline
-	void dwc_reg_modify(ulong reg, u32 offset, const u32 _clear_mask, const u32 _set_mask)
+static inline void dwc_reg_modify(ulong reg, u32 offset, const u32 clear_mask,
+				const u32 set_mask)
 {
-	writel( (readl((unsigned __iomem *)(reg + offset)) & ~_clear_mask) | _set_mask, reg + offset);
-};
+	u32 val = __raw_readl(reg + offset);
+	val &= ~clear_mask;
+	val |= set_mask;
+	__raw_writel(val, reg + offset);
+}
 
-static inline void dwc_write_fifo32(ulong reg, const u32 _value)
+static inline void dwc_write_fifo32(ulong reg, const u32 value)
 {
-	writel(_value, (unsigned __iomem *)reg);
-};
+	__raw_writel(value, reg);
+}
 
-static inline u32 dwc_read_fifo32(u32 _reg)
+static inline u32 dwc_read_fifo32(u32 reg)
 {
-	return readl((unsigned __iomem *) _reg);
-};
+	return __raw_readl(reg);
+}
 
 /*
  * Debugging support vanishes in non-debug builds.
