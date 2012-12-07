@@ -263,7 +263,7 @@ config ARCH_SOCFPGA
 	select GENERIC_CLOCKEVENTS
 	select GPIO_PL061 if GPIOLIB
 	select HAVE_ARM_SCU
-	select HAVE_SMP
+	select HAVE_SMP if (!FPGA_SDRAM)
 	select SPARSE_IRQ
 	select USE_OF
 	help
@@ -1096,6 +1096,8 @@ source "arch/arm/mach-sa1100/Kconfig"
 
 source "arch/arm/plat-samsung/Kconfig"
 source "arch/arm/plat-s3c24xx/Kconfig"
+
+source "arch/arm/mach-socfpga/Kconfig"
 
 source "arch/arm/plat-spear/Kconfig"
 
