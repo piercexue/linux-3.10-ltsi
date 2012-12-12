@@ -244,7 +244,7 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 {
 	struct mmc_data	*data;
 	struct dw_mci_slot *slot = mmc_priv(mmc);
-	struct dw_mci_drv_data *drv_data = slot->host->drv_data;
+	const struct dw_mci_drv_data *drv_data = slot->host->drv_data;
 	u32 cmdr;
 	cmd->error = -EINPROGRESS;
 
@@ -276,6 +276,9 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 
 	if (drv_data && drv_data->prepare_command)
 		drv_data->prepare_command(slot->host, &cmdr);
+
+	if (slot->host->use_hold_reg)
+		cmdr |= SDMMC_CMD_USE_HOLD_REG;
 
 	return cmdr;
 }
@@ -785,7 +788,7 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
 	struct dw_mci_slot *slot = mmc_priv(mmc);
-	struct dw_mci_drv_data *drv_data = slot->host->drv_data;
+	const struct dw_mci_drv_data *drv_data = slot->host->drv_data;
 	u32 regs;
 
 	/* set default 1 bit mode */
@@ -1829,7 +1832,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 {
 	struct mmc_host *mmc;
 	struct dw_mci_slot *slot;
-	struct dw_mci_drv_data *drv_data = host->drv_data;
+	const struct dw_mci_drv_data *drv_data = host->drv_data;
 	int ctrl_id, ret;
 	u8 bus_width;
 
@@ -2050,13 +2053,18 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	struct dw_mci_board *pdata;
 	struct device *dev = host->dev;
 	struct device_node *np = dev->of_node;
-	struct dw_mci_drv_data *drv_data = host->drv_data;
+	const struct dw_mci_drv_data *drv_data = host->drv_data;
 	int idx, ret;
 
 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
 	if (!pdata) {
 		dev_err(dev, "could not allocate memory for pdata\n");
 		return ERR_PTR(-ENOMEM);
+	}
+
+	if (of_property_read_u32(dev->of_node, "bus-hz", &pdata->bus_hz)) {
+		dev_err(dev, "couldn't determine bus-hz\n");
+		pdata->bus_hz = 50000000;
 	}
 
 	/* find out number of slots supported */
@@ -2096,7 +2104,7 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 
 int dw_mci_probe(struct dw_mci *host)
 {
-	struct dw_mci_drv_data *drv_data = host->drv_data;
+	const struct dw_mci_drv_data *drv_data = host->drv_data;
 	int width, i, ret = 0;
 	u32 fifo_size;
 	int init_slots = 0;
@@ -2108,36 +2116,6 @@ int dw_mci_probe(struct dw_mci *host)
 			return -EINVAL;
 		}
 	}
-
-#ifdef CONFIG_OF
-	if (of_property_read_u32(host->dev.of_node, "bus-hz", &prop)) {
-		dev_err(&host->dev, "couldn't determine bus-hz\n");
-		return -ENODEV;
-	}
-	host->pdata->bus_hz = prop;
-
-	if (of_property_read_u32(host->dev.of_node, "num-slots", &prop)) {
-		dev_err(&host->dev, "couldn't determine num-slots\n");
-		return -ENODEV;
-	}
-	host->pdata->num_slots = prop;
-
-	/* Optional parameter. */
-	if (!of_property_read_u32(host->dev.of_node, "fifo-depth", &prop)) {
-		host->pdata->fifo_depth = prop;
-	}
-
-	if (of_property_read_u32(host->dev.of_node, "bus-width", &prop)) {
-		dev_err(&host->dev, "couldn't determine bus-width\n");
-		return -ENODEV;
-	}
-
-	if (prop == 8)
-		host->pdata->caps |= (MMC_CAP_4_BIT_DATA |
-					MMC_CAP_8_BIT_DATA);
-	else if (prop == 4)
-		host->pdata->caps |= MMC_CAP_4_BIT_DATA;
-#endif
 
 	if (!host->pdata->select_slot && host->pdata->num_slots > 1) {
 		dev_err(host->dev,
@@ -2220,6 +2198,9 @@ int dw_mci_probe(struct dw_mci *host)
 		width = 32;
 		host->data_shift = 2;
 	}
+
+	/* Get the USE_HOLD_REG */
+	host->use_hold_reg = mci_readl(host, CMD) & SDMMC_CMD_USE_HOLD_REG;
 
 	/* Reset all blocks */
 	if (!mci_wait_reset(host->dev, host))
