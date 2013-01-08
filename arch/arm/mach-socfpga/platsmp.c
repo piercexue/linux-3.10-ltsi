@@ -27,7 +27,7 @@
 
 #include "core.h"
 
-void __cpuinit platform_secondary_init(unsigned int cpu)
+static void __cpuinit socfpga_secondary_init(unsigned int cpu)
 {
 	/*
 	 * if any interrupts are already enabled for the primary
@@ -37,14 +37,14 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
 	gic_secondary_init(0);
 }
 
-int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
+static int __cpuinit socfpga_boot_secondary(unsigned int cpu, struct task_struct *idle)
 {
 	int trampoline_size = &secondary_trampoline_end - &secondary_trampoline;
 
 	memcpy(phys_to_virt(0), &secondary_trampoline, trampoline_size);
 
-	__raw_writel(virt_to_phys(secondary_startup),
-					(sys_manager_base_addr+cpu1start_addr));
+	__raw_writel(virt_to_phys(v7_secondary_startup),
+		(sys_manager_base_addr+(cpu1start_addr & 0x000000ff)));
 
 	flush_cache_all();
 	smp_wmb();
@@ -60,7 +60,7 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
  * Initialise the CPU possible map early - this describes the CPUs
  * which may be present or become present in the system.
  */
-void __init smp_init_cpus(void)
+static void __init socfpga_smp_init_cpus(void)
 {
 	unsigned int i, ncores;
 
@@ -71,8 +71,8 @@ void __init smp_init_cpus(void)
 
 	/* sanity check */
 	if (ncores > num_possible_cpus()) {
-		pr_warn("# of cores (%d) greater maximum of %d\n",
-			ncores, num_possible_cpus());
+		pr_warn("socfpga: no. of cores (%d) greater than configured"
+			"maximum of %d - clipping\n", ncores, num_possible_cpus());
 		ncores = num_possible_cpus();
 	}
 
@@ -82,7 +82,30 @@ void __init smp_init_cpus(void)
 	set_smp_cross_call(gic_raise_softirq);
 }
 
-void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+static void __init socfpga_smp_prepare_cpus(unsigned int max_cpus)
 {
 	scu_enable(socfpga_scu_base_addr);
 }
+
+/*
+ * platform-specific code to shutdown a CPU
+ *
+ * Called with IRQs disabled
+ */
+static void socfpga_cpu_die(unsigned int cpu)
+{
+	cpu_do_idle();
+
+	/* We should have never returned from idle */
+	panic("cpu %d unexpectedly exit from shutdown\n", cpu);
+}
+
+struct smp_operations socfpga_smp_ops __initdata = {
+	.smp_init_cpus		= socfpga_smp_init_cpus,
+	.smp_prepare_cpus	= socfpga_smp_prepare_cpus,
+	.smp_secondary_init	= socfpga_secondary_init,
+	.smp_boot_secondary	= socfpga_boot_secondary,
+#ifdef CONFIG_HOTPLUG_CPU
+	.cpu_die		= socfpga_cpu_die,
+#endif
+};

@@ -63,12 +63,12 @@ static void __init socfpga_scu_map_io(void)
 
 static void __init init_socfpga_vt(void)
 {
-	cpu1start_addr = 0x10;
+	cpu1start_addr = 0xffd08010;
 }
 
 static void __init init_socfpga(void)
 {
-	cpu1start_addr = 0xc4;
+	cpu1start_addr = 0xffd080c4;
 }
 
 static void __init enable_periphs(void)
@@ -135,6 +135,7 @@ static const char *altera_dt_match[] = {
 };
 
 DT_MACHINE_START(SOCFPGA, "Altera SOCFPGA")
+	.smp			= smp_ops(socfpga_smp_ops),
 	.map_io		= socfpga_map_io,
 	.init_irq	= gic_init_irq,
 	.handle_irq     = gic_handle_irq,
