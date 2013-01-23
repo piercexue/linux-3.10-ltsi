@@ -49,7 +49,10 @@
 #define PORT_XR17D15X	21	/* Exar XR17D15x UART */
 #define PORT_LPC3220	22	/* NXP LPC32xx SoC "Standard" UART */
 #define PORT_8250_CIR	23	/* CIR infrared port, has its own driver */
-#define PORT_MAX_8250	23	/* max port ID */
+#define PORT_ALTR_16550_F32 24	/* Altera 16550 UART with 32 FIFOs */
+#define PORT_ALTR_16550_F64 25	/* Altera 16550 UART with 64 FIFOs */
+#define PORT_ALTR_16550_F128 26	/* Altera 16550 UART with 128 FIFOs */
+#define PORT_MAX_8250	26	/* max port ID */
 
 /*
  * ARM specific type numbers.  These are not currently guaranteed
