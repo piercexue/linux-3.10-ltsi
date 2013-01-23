@@ -52,6 +52,10 @@
 #define PORT_XR17V35X	24	/* Exar XR17V35x UARTs */
 #define PORT_BRCM_TRUMANAGE	24
 #define PORT_MAX_8250	25	/* max port ID */
+#define PORT_ALTR_16550_F32 24	/* Altera 16550 UART with 32 FIFOs */
+#define PORT_ALTR_16550_F64 25	/* Altera 16550 UART with 64 FIFOs */
+#define PORT_ALTR_16550_F128 26	/* Altera 16550 UART with 128 FIFOs */
+#define PORT_MAX_8250	26	/* max port ID */
 
 /*
  * ARM specific type numbers.  These are not currently guaranteed
