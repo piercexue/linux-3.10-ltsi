@@ -719,6 +719,7 @@ static const struct spi_device_id m25p_ids[] = {
 	/* Micron */
 	{ "n25q128",  INFO(0x20ba18, 0, 64 * 1024, 256, 0) },
 	{ "n25q256a", INFO(0x20ba19, 0, 64 * 1024, 512, SECT_4K) },
+	{ "n25q00",   INFO(0x20ba21, 0, 64 * 1024, 256, SECT_4K) },
 
 	/* Spansion -- single (large) sector size only, at least
 	 * for the chips listed here (without boot sectors).
