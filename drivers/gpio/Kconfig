@@ -119,6 +119,7 @@ config GPIO_GENERIC_PLATFORM
 config GPIO_ALTERA
        tristate "Altera GPIO"
        depends on OF_GPIO
+       select IRQ_DOMAIN
        help
          Say yes here to support the Altera PIO device.
 
