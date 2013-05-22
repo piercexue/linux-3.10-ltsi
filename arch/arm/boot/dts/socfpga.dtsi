@@ -477,8 +477,6 @@
 			clocks = <&emac0_clk>;
 			clock-names = "stmmaceth";
 			status = "disabled";
-			clocks = <&emac0_clk>;
-			clock-names = "stmmaceth";
 		};
 
 		gmac1: ethernet@ff702000 {
@@ -490,8 +488,6 @@
 			clocks = <&emac1_clk>;
 			clock-names = "stmmaceth";
 			status = "disabled";
-			clocks = <&emac1_clk>;
-			clock-names = "stmmaceth";
 		};
 
 		gpio0: gpio@ff708000 {
@@ -680,7 +676,7 @@
 		};
 		
 		sysmgr@ffd08000 {
-			compatible = "altr,sys-mgr";
+			compatible = "altr,sys-mgr", "syscon";
 			reg = <0xffd08000 0x4000>;
 		};
 
@@ -744,6 +740,7 @@
 				512 512 512 512 512 512 512 512 512>;
 			dev-tx-fifo-size = <512 512 512 512 512 512
 				512 512 512 512 512 512 512 512 512>;
+			status = "disabled";
 		};
 
 		usb1: usb@ffb40000 {
@@ -758,6 +755,7 @@
 				512 512 512 512 512 512 512 512 512>;
 			dev-tx-fifo-size = <512 512 512 512 512 512
 				512 512 512 512 512 512 512 512 512>;
+			status = "disabled";
 		};
 	};
 };
