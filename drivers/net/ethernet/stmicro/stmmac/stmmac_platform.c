@@ -56,7 +56,6 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
 	struct device_node *np = pdev->dev.of_node;
 	struct stmmac_dma_cfg *dma_cfg;
 	const struct of_device_id *device;
-	u32 phyaddr;
 
 	if (!np)
 		return -ENODEV;
@@ -193,11 +192,10 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
 
 	plat_dat = dev_get_platdata(&pdev->dev);
 	if (pdev->dev.of_node) {
-		if (NULL == plat_dat) {
+		if (!plat_dat)
 			plat_dat = devm_kzalloc(&pdev->dev,
 					sizeof(struct plat_stmmacenet_data),
 					GFP_KERNEL);
-		}
 		if (!plat_dat) {
 			pr_err("%s: ERROR: no memory", __func__);
 			return  -ENOMEM;
