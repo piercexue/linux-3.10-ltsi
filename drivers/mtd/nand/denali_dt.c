@@ -109,6 +109,9 @@ static int denali_dt_probe(struct platform_device *ofdev)
 	}
 
 	dt->clk = devm_clk_get(&ofdev->dev, NULL);
+	denali->have_hw_ecc_fixup =
+		of_property_read_bool(ofdev->dev.of_node, "have-hw-ecc-fixup");
+
 	if (IS_ERR(dt->clk)) {
 		dev_err(&ofdev->dev, "no clk available\n");
 		return PTR_ERR(dt->clk);
