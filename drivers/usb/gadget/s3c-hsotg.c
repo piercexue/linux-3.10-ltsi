@@ -35,6 +35,7 @@
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 #include <linux/usb/phy.h>
+#include <linux/phy/phy.h>
 #include <linux/platform_data/s3c-hsotg.h>
 
 #include "s3c-hsotg.h"
