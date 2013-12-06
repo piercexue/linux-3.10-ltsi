@@ -3003,6 +3003,9 @@ static void do_mod_ctors(struct module *mod)
 
 	for (i = 0; i < mod->num_ctors; i++)
 		mod->ctors[i]();
+
+	for (i = 0; i < mod->num_init_array; i++)
+		mod->init_array[i]();
 #endif
 }
 
