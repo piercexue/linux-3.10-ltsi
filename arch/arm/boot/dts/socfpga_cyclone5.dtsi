@@ -64,6 +64,18 @@
 			};
 		};
 
+		gpio@ff708000 {
+			status = "okay";
+		};
+
+		gpio@ff709000 {
+			status = "okay";
+		};
+
+		gpio@ff70a000 {
+			status = "okay";
+		};
+
 		i2c0: i2c@ffc04000 {
 			speed-mode = <0>;
 			status = "okay";
@@ -87,29 +99,6 @@
 
 		watchdog0: wd@ffd02000 {
 			status = "okay";
-		};
-
-		leds {
-			compatible = "gpio-leds";
-			hps0 {
-				label = "hps_led0";
-				gpios = <&gpio1 15 1>;
-			};
-
-			hps1 {
-				label = "hps_led1";
-				gpios = <&gpio1 14 1>;
-			};
-
-			hps2 {
-				label = "hps_led2";
-				gpios = <&gpio1 13 1>;
-			};
-
-			hps3 {
-				label = "hps_led3";
-				gpios = <&gpio1 12 1>;
-			};
 		};
 	};
 };
