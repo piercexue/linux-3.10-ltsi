@@ -46,7 +46,7 @@ void __iomem *l3regs_base_addr;
 void __iomem *clk_mgr_base_addr;
 unsigned long cpu1start_addr;
 
-static int stmmac_plat_init(struct platform_device *pdev);
+static int stmmac_plat_init(struct platform_device *pdev, void *priv);
 
 static struct plat_stmmacenet_data stmmacenet0_data = {
 	.init = &stmmac_plat_init,
@@ -164,7 +164,7 @@ static void __init enable_periphs(void)
 	writel(rstval, rst_manager_base_addr + SOCFPGA_RSTMGR_MODPERRST);
 }
 
-static int stmmac_plat_init(struct platform_device *pdev)
+static int stmmac_plat_init(struct platform_device *pdev, void *priv)
 {
 	u32 ctrl, val, shift;
 	u32 rstmask;

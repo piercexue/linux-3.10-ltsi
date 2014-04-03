@@ -90,7 +90,6 @@ static int dw_spi_mmio_probe(struct platform_device *pdev)
 	dws->bus_num = 0;
 #endif
 
-	dws->parent_dev = &pdev->dev;
 	dws->max_freq = clk_get_rate(dwsmmio->clk);
 
 #ifdef CONFIG_SPI_DW_PL330_DMA
